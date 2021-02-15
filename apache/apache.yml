@@ -1,0 +1,22 @@
+---
+- name: Install Apache Server
+  hosts: centos
+  become: true
+
+  handlers:
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted
+    
+  tasks:
+    - name: Verify Apache install
+      yum:
+        name: httpd
+        state: present
+
+    - name: Verify Apache is running and is enabled
+      service:
+        name: httpd
+        state: started
+        enabled: true
