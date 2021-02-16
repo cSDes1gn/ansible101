@@ -1,0 +1,55 @@
+---
+- name: Install Apache Server
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars:
+    base_image: centos:latest
+    container_name: centos-apache
+
+  handlers:
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted
+
+  pre_tasks:
+    - name: Verify docker image is built
+      docker_image:
+        name: "{{ base_image }}"
+        source: build
+        build:
+          path: docker
+        state: present
+
+    - name: Verify docker container is running
+      docker_container:
+        image: centos:latest
+        name: "{{ container_name }}"
+        command: sleep infinity
+    
+    - name: Add the newly created container to the inventory.
+      add_host:
+        hostname: "{{ container_name }}"
+        ansible_connection: docker
+
+  tasks:
+    - name: Verify Apache install
+      yum:
+        name: httpd
+        state: present
+      delegate_to: "{{ container_name }}"
+
+    - name: Verify Apache is running and is enabled
+      service:
+        name: httpd
+        state: started
+        enabled: true
+      delegate_to: "{{ container_name }}"
+  
+  post_tasks:
+    - name: Remove the container
+      docker_container:
+        name: "{{ container_name }}"
+        state: absent
